@@ -1,12 +1,17 @@
-import { useContext, useLayoutEffect } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { useContext, useLayoutEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import IconButton from "../components/ui/IconButton";
 import { Colors } from "./../constants/colors";
-import Button from "../components/ui/Button";
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
+import { editExpense, removeExpense, storeExpense } from "../utils/http";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ErrorOverlay from "../components/ui/ErrorOverlay";
 
 function ManageExpense({ route, navigation }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
+
   const { deleteExpense, addExpense, updateExpense, expenses } =
     useContext(ExpensesContext);
 
@@ -24,22 +29,48 @@ function ManageExpense({ route, navigation }) {
     );
   });
 
-  function deletePressHandler() {
-    deleteExpense(editedExpenseId);
-    navigation.goBack();
+  async function deletePressHandler() {
+    setIsLoading(true);
+    try {
+      await removeExpense(editedExpenseId);
+      deleteExpense(editedExpenseId);
+    } catch (error) {
+      setError("Could not delete expense!");
+    } finally {
+      setIsLoading(false);
+      navigation.goBack();
+    }
   }
 
   function cancelHandler() {
     navigation.goBack();
   }
 
-  function submitHandler(expenseData) {
-    if (isEditing) {
-      updateExpense(editedExpenseId, expenseData);
-    } else {
-      addExpense(expenseData);
+  async function submitHandler(expenseData) {
+    setIsLoading(true);
+    let newId = "";
+    try {
+      if (isEditing) {
+        await editExpense(editedExpenseId, expenseData);
+        updateExpense(editedExpenseId, expenseData);
+      } else {
+        const newId = await storeExpense(expenseData);
+        addExpense({ ...expenseData, newId });
+      }
+    } catch (error) {
+      setError("Could not save expense!");
+    } finally {
+      setIsLoading(false);
+      navigation.goBack();
     }
-    navigation.goBack();
+  }
+
+  if (error && !isLoading) {
+    return <ErrorOverlay message={error} />;
+  }
+
+  if (isLoading) {
+    return <LoadingOverlay />;
   }
 
   return (

@@ -40,8 +40,6 @@ function ExpenseForm({ onCancel, isEditing, onSubmit, defaultValues }) {
     const dateIsValid = expenseData.date.toString() !== "Invalid Date";
     const descriptionIsValid = expenseData.description.trim().length > 0;
     if (!amountIsValid || !dateIsValid || !descriptionIsValid) {
-      console.log(descriptionIsValid);
-
       setInputs((currentInputs) => {
         return {
           amount: { value: currentInputs.amount.value, isValid: amountIsValid },
